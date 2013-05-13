@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-module
+  type="WEB"
+  name="workCheck"
+  id="myeclipse.1365487746890"
+  context-root="/workCheck"
+  j2ee-spec="5.0"
+  archive="workCheck.war">
+  <attributes>
+    <attribute name="webrootdir" value="WebRoot" />
+  </attributes>
+</project-module>
+

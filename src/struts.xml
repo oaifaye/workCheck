@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE struts PUBLIC "-//Apache Software Foundation//DTD Struts Configuration 2.1//EN" "http://struts.apache.org/dtds/struts-2.1.dtd">
+<struts>
+	<package name="default" extends="struts-default" namespace="/">
+		
+		<action name="aainput" class="com.faye.action.exportAction" method="aainput">
+			<result name="success">/index.jsp</result>
+		</action>
+		<action name="listAbnormalTime" class="com.faye.action.exportAction" method="listAbnormalTime">
+			<result name="success">/abnormalTime.jsp</result>
+			<result name="error">/404.jsp</result>
+		</action>
+		<action name="initSuanqiu" class="com.faye.action.SuanqiuAction" method="initSuanqiu">
+			<result name="success">/game/index.jsp</result>
+		</action>
+		<action name="saveSuanqiu" class="com.faye.action.SuanqiuAction" method="saveSuanqiu">
+			<result name="success" type="redirect">initSuanqiu</result>
+		</action>
+	</package>
+</struts>    
