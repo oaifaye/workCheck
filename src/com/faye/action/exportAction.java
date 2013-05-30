@@ -8,7 +8,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
@@ -37,92 +39,31 @@ public class exportAction extends ActionSupport {
 	private List<String> allPeopleName;
 	private List<AbnormalTime> abnormalTimeList = new ArrayList<AbnormalTime>();
 
-	ArrayList<String> allWorkDay;
-	SimpleDateFormat dateFormat1 = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-	SimpleDateFormat dateFormat2 = new SimpleDateFormat("HH:mm:ss");
-	SimpleDateFormat dateFormat3 = new SimpleDateFormat("yyyy-MM-dd");
+	private ArrayList<String> allWorkDay;
+	private SimpleDateFormat dateFormat1 = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+	private SimpleDateFormat dateFormat2 = new SimpleDateFormat("HH:mm:ss");
+	private SimpleDateFormat dateFormat3 = new SimpleDateFormat("yyyy-MM-dd");
 
 	// excel向数据库导入数据
 	public String aainput() {
-		// 第一次读EXCEL，目的是为时间范围做准备
-		List<Worker> workerList1 = readExcel();
+		
+		workerList = readExcel();
 		// 计算时间范围
-		String[] dateScope = startAndStopTime(workerList1);
+		String[] dateScope = startAndStopTime(workerList);
 		// 起止时间传到页面
 		startTime = dateScope[0];
 		endTime = dateScope[1];
-		// 第二次读EXCEL，目的是插入全部数据
-		String number = null;
-		String name = null;
-		String signTime = null;
-		FileInputStream fis = null;
-		POIFSFileSystem fs = null;// 处理流
-		HSSFWorkbook wb = null;//
-		HSSFSheet hssfsheet = null;// 工作表
-		HSSFRow hssfrow = null;// 单元行
-
-		try {
-			fis = new FileInputStream(uploadFile);
-			fs = new POIFSFileSystem(fis);
-			wb = new HSSFWorkbook(fs);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		hssfsheet = wb.getSheetAt(0);// 第一个工作表
-		hssfrow = hssfsheet.getRow(0);// 第一行
-		int sheetcou = wb.getNumberOfSheets();
-		System.out.println("当前sheet：" + sheetcou);
-		for (int i = 0; i < sheetcou; i++) {// 从第1个sheet开始
-			hssfsheet = wb.getSheetAt(i);// 第i个sheet的数据行
-			int cou = hssfsheet.getPhysicalNumberOfRows();// 获得当前表有多少行数据
-			System.out.println("当前表总数据条数：" + cou);
-			for (int j = 1; j < cou; j++) {// 从第二行开始
-				System.out.println("当前行数：" + j);
-				hssfrow = hssfsheet.getRow(j);
-				// 判断是否还存在需要导入的数据
-				if (hssfrow == null) {
-					System.out.println("这里已经没有数据，在第" + i + "行，第" + j + "列");
-					break;
-				}
-				/** 将EXCEL中的第 j 行，第一列的值插入到实例中 */
-				/**
-				 * CELL_TYPE_NUMERIC 数值型 0 CELL_TYPE_STRING 字符串型 1
-				 * CELL_TYPE_FORMULA 公式型 2 CELL_TYPE_BLANK 空值 3
-				 * CELL_TYPE_BOOLEAN 布尔型 4 CELL_TYPE_ERROR 错误 5
-				 */
-				Worker worker = new Worker();
-				number = hssfrow.getCell(0).getStringCellValue().trim();
-				name = hssfrow.getCell(1).getStringCellValue().trim();
-				signTime = hssfrow.getCell(2).getStringCellValue();
-
-				// 登记号码
-				worker.setNumber(number);
-				// 姓名
-				if (("孙雪").equals(name.replace(" ", ""))) {
-					worker.setName("孙宝宝");
-				} else if (("苏丽沣").equals(name.replace(" ", ""))) {
-					worker.setName("苏丽沣(最伟大的程序提供者！)");
-				} else {
-					worker.setName(name);
-				}
-				worker.setSignTime(signTime);
-				worker.setWeek(findWeek(signTime));
-
-				// 计算所有应上班的日期
-				allWorkDay = workDay(dateScope);
-
-				// 根据上下班时间自动插入flog
-				countFlog(workerList1, allWorkDay, signTime, worker);
-				//
-				System.out.println(worker.getNumber() + worker.getName()
-						+ worker.getSignTime() + "  flog:" + worker.getFlog());
-				workerList.add(worker);
-			}
+		for(Worker worker : workerList){
+			// 计算所有应上班的日期
+			allWorkDay = workDay(dateScope);
+			// 根据上下班时间自动插入flog
+			countFlog(workerList, allWorkDay, worker.getSignTime(), worker);
+			
 		}
 		// 计算员工列表
 		allPeopleName = allPeople(workerList);
 		// 计算旷工,并自动向workerList中添加旷工Worker
-		absenteeism(workerList1, allWorkDay, allPeopleName);
+		absenteeism(workerList, allWorkDay, allPeopleName);
 		ActionContext.getContext().getSession()
 				.put("allPeopleName", allPeopleName);
 		ActionContext.getContext().getSession().put("workerList", workerList);
@@ -144,7 +85,7 @@ public class exportAction extends ActionSupport {
 				AbnormalTime abnormalTime = new AbnormalTime();
 				double allAbnormalTime = 0;
 				// 平时加班的（为避免平时加班但2次以上打卡）
-				ArrayList<String> pingList = new ArrayList<String>();
+				Map<String , Double> pingMap = new HashMap<String, Double>();
 				// 节假日整天加班的（为避免节假日整天加班但2次以上打卡）
 				ArrayList<String> zhengList = new ArrayList<String>();
 				// 节假日加班，只打一次卡的，标记一下
@@ -160,13 +101,19 @@ public class exportAction extends ActionSupport {
 										.format(dateFormat1.parse(worker
 												.getSignTime()));
 								if (worker.getWeek().indexOf("(整)") == -1) {
-
+									double workAbnormalTime = worker.getAbnormalTime();
 									// 非节假日整天加班的
-									if (!pingList.contains(signTime)
-											&& worker.getAbnormalTime() != 0) {
-										allAbnormalTime += worker
-												.getAbnormalTime();
-										pingList.add(signTime);
+									if( workAbnormalTime != 0){
+										if (!pingMap.keySet().contains(signTime)) {
+											allAbnormalTime += worker.getAbnormalTime();
+											pingMap.put(signTime, workAbnormalTime);
+										}else{
+											//第二次发现的时间比Map中的大，加上差值
+											if(pingMap.get(signTime)<workAbnormalTime){
+												allAbnormalTime+=workAbnormalTime-pingMap.get(signTime);
+												pingMap.put(signTime, workAbnormalTime);
+											}
+										}
 									}
 								} else {
 									// 节假日整天加班的
@@ -203,8 +150,8 @@ public class exportAction extends ActionSupport {
 
 	// ===================================================================================================
 
-	// 为计算时间范围做准备
-	public List<Worker> readExcel() {
+	// 读取excel数据
+	private List<Worker> readExcel() {
 		String number = null;
 		String name = null;
 		String signTime = null;
@@ -219,9 +166,7 @@ public class exportAction extends ActionSupport {
 			fis = new FileInputStream(uploadFile);
 			fs = new POIFSFileSystem(fis);
 			wb = new HSSFWorkbook(fs);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		
 		hssfsheet = wb.getSheetAt(0);// 第一个工作表
 		hssfrow = hssfsheet.getRow(0);// 第一行
 		int sheetcou = wb.getNumberOfSheets();
@@ -255,15 +200,21 @@ public class exportAction extends ActionSupport {
 				} else {
 					worker.setName(name);
 				}
-				worker.setSignTime(signTime);
+				
+				worker.setSignTime(dateFormat1.format(dateFormat1.parse(signTime)));
+				worker.setWeek(findWeek(signTime));
 				workerList1.add(worker);
 			}
+			
+		}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 		return workerList1;
 	}
 
 	// 根据时间计算是否为加班，迟到等，并自动添加flog与abnormalTime
-	public void countFlog(List<Worker> workerList1,
+	private void countFlog(List<Worker> workerList1,
 			ArrayList<String> allWorkDay, String signTime, Worker worker) {
 		try {
 			boolean flog = false;
@@ -315,7 +266,7 @@ public class exportAction extends ActionSupport {
 	}
 
 	// 根据日期计算星期
-	public String findWeek(String signTime) {
+	private String findWeek(String signTime) {
 		// 星期
 		String[] weekDaysName = { "日", "一", "二", "三", "四", "五", "六" };
 		Calendar calendar = Calendar.getInstance();
@@ -329,7 +280,7 @@ public class exportAction extends ActionSupport {
 	}
 
 	// 计算文档起止时间
-	public String[] startAndStopTime(List<Worker> workerList) {
+	private String[] startAndStopTime(List<Worker> workerList) {
 		SimpleDateFormat dateFormat1 = new SimpleDateFormat("yyyy-MM-dd");
 		long startTimeL = 0;
 		long endTimeL = 0;
@@ -369,7 +320,7 @@ public class exportAction extends ActionSupport {
 
 	// 一段时间内全部工作日的日期
 	@SuppressWarnings("deprecation")
-	public ArrayList<String> workDay(String[] dateScope) {
+	private ArrayList<String> workDay(String[] dateScope) {
 		ArrayList<String> allWorkDay = new ArrayList<String>();
 		try {
 			// 计算非六日
@@ -425,7 +376,7 @@ public class exportAction extends ActionSupport {
 	}
 
 	// 计算全部人员列表
-	public ArrayList<String> allPeople(List<Worker> workerList) {
+	private ArrayList<String> allPeople(List<Worker> workerList) {
 		ArrayList<String> peopleList = new ArrayList<String>();
 
 		for (Worker w : workerList) {
@@ -449,7 +400,7 @@ public class exportAction extends ActionSupport {
 	}
 
 	// 截取double到指定为数
-	public double round(double value, int scale, int roundingMode) {
+	private double round(double value, int scale, int roundingMode) {
 		BigDecimal bd = new BigDecimal(value);
 		bd = bd.setScale(scale, roundingMode);
 		double d = bd.doubleValue();
@@ -458,7 +409,7 @@ public class exportAction extends ActionSupport {
 	}
 
 	// 将一个double变为小数点后是0.5或0.0或+1
-	public double tfRound(double value) {
+	private double tfRound(double value) {
 		double result = 0;
 		double value1 = round(value, 0, BigDecimal.ROUND_DOWN);
 		double vPoint = value - value1;
@@ -474,14 +425,14 @@ public class exportAction extends ActionSupport {
 	}
 
 	// 根据人名和日期，计算这个日期这个人的上班时长,需要输入workerList
-	public double workDuration(List<Worker> workerList1, String workerName,
+	private double workDuration(List<Worker> workerList1, String workerName,
 			String date) {
 		long workStartTime = 0;
 		long workEndTime = 0;
 		for (Worker worker : workerList1) {
 			String workerDate;
 			try {
-				workerDate = dateFormat3.format(dateFormat1.parse(worker
+				workerDate = dateFormat3.format(dateFormat3.parse(worker
 						.getSignTime()));
 				long workerTime = dateFormat2.parse(
 						dateFormat2.format(dateFormat1.parse(worker
@@ -508,7 +459,7 @@ public class exportAction extends ActionSupport {
 	}
 
 	// 计算旷工,并自动向workerList中添加旷工Worker
-	public void absenteeism(List<Worker> workerList1,
+	private void absenteeism(List<Worker> workerList1,
 			ArrayList<String> allWorkDay, List<String> allPeopleName) {
 		for (String peopleName : allPeopleName) {
 			for (String workDay : allWorkDay) {
@@ -542,12 +493,16 @@ public class exportAction extends ActionSupport {
 				if (flog1 != 1) {
 					Worker worker1 = new Worker();
 					worker1.setName(peopleName);
+					//为时间加上00:00,以免后面的方法时间转换出异常
+					//String workDayFinel=dateFormat1.format(dateFormat1.parse(workDay));
+					String workDayFinel=workDay+" 00:00";
+					
 					if (flog1 == 0) {
-						worker1.setSignTime(workDay);
+						worker1.setSignTime(workDayFinel);
 					} else if (flog1 == 2) {
-						worker1.setSignTime(workDay + "(下)");
+						worker1.setSignTime(workDayFinel + "(下)");
 					} else if (flog1 == 3) {
-						worker1.setSignTime(workDay + "(缺)");
+						worker1.setSignTime(workDayFinel + "(缺)");
 					}
 					worker1.setFlog("3");
 					worker1.setWeek(findWeek(workDay));
