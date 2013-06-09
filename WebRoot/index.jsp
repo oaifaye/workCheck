@@ -335,7 +335,7 @@ text-align: center;
 				<s:submit value="开始"></s:submit>
 			</s:form>
 		</div>
-		
+		<s:property value="workerList.size()" />
 		<table class="table">
 			<tr class="tableHead" >
 				<td>序号</td>
@@ -346,6 +346,7 @@ text-align: center;
 				<td>加班时间</td>
 				<td>flog</td>
 			</tr>
+			
 			<s:iterator value="workerList" status="st">
 				<s:if test="flog==1">
 					<tr bgcolor="#FF2D2D" class="trContent">

@@ -70,6 +70,9 @@ public class exportAction extends ActionSupport {
 		System.out.println("=====================================登陆地址："
 				+ ServletActionContext.getRequest().getRemoteAddr()
 				+ "==========================================");
+		for(Worker w: workerList){
+			System.out.println(w.getSignTime());
+		}
 		return SUCCESS;
 	}
 
@@ -258,7 +261,7 @@ public class exportAction extends ActionSupport {
 				double abnormalTime = workDuration(workerList1,
 						worker.getName(), dateFormat3.format(dateFormat1
 								.parse(worker.getSignTime())));
-				worker.setAbnormalTime(abnormalTime);
+				worker.setAbnormalTime(tfRound(abnormalTime));
 			}
 		} catch (ParseException e) {
 			e.printStackTrace();
@@ -453,8 +456,8 @@ public class exportAction extends ActionSupport {
 				e.printStackTrace();
 			}
 		}
-		double workingTime = tfRound((float) (workEndTime - workStartTime)
-				/ (1000 * 60 * 60));
+		double workingTime = (float) (workEndTime - workStartTime)
+				/ (1000 * 60 * 60);
 		return workingTime;
 	}
 
@@ -479,11 +482,12 @@ public class exportAction extends ActionSupport {
 							if (workDay.equals(workerTime)) {
 								flog1 = 1;
 								// 只打一次卡
-							} else if (workerTimeD < 0.0) {
-								flog1 = 2;
-							} else if (workerTimeD > 0 && workerTimeD < 8) {
+								if (workerTimeD < 0.0) {
+									flog1 = 2;
+								} else if (workerTimeD > 0 && workerTimeD < 8) {
 								// 没上满8小时
-								flog1 = 3;
+									flog1 = 3;
+								}
 							}
 						} catch (ParseException e) {
 							e.printStackTrace();
@@ -510,6 +514,9 @@ public class exportAction extends ActionSupport {
 					System.out.println(worker1.getName());
 				}
 			}
+		}
+		for(Worker w: workerList){
+			System.out.println(w.getSignTime());
 		}
 	}
 
