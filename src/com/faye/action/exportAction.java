@@ -432,17 +432,20 @@ public class exportAction extends ActionSupport {
 			String date) {
 		long workStartTime = 0;
 		long workEndTime = 0;
+		boolean flog = false; //8：00整打卡的标志位，"08:00:00"时workerTime=0，影响数据
 		for (Worker worker : workerList1) {
 			String workerDate;
 			try {
 				workerDate = dateFormat3.format(dateFormat3.parse(worker
 						.getSignTime()));
-				long workerTime = dateFormat2.parse(
-						dateFormat2.format(dateFormat1.parse(worker
-								.getSignTime()))).getTime();
+				 String signTimeFormat2 = dateFormat2.format(dateFormat1.parse(worker
+						.getSignTime()));
+				long workerTime = dateFormat2.parse(signTimeFormat2).getTime();
+				//"08:00:00"时workerTime=0
 				if (worker.getName().equals(workerName)
 						&& workerDate.equals(date)) {
-					if (workStartTime == 0) {
+					if (workStartTime == 0&&flog==false) {
+						flog=true;
 						workStartTime = workerTime;
 					} else if (workEndTime == 0) {
 						workEndTime = workerTime;
