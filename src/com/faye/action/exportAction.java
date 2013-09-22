@@ -2,7 +2,10 @@ package com.faye.action;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -12,10 +15,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.poi.hssf.usermodel.HSSFCell;
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.struts2.ServletActionContext;
 
 import com.faye.bean.AbnormalTime;
@@ -31,7 +39,7 @@ public class exportAction extends ActionSupport {
 	private List<Worker> workerList = new ArrayList<Worker>();
 	private String normTime1;
 	private String normTime2;
-	private String normTime3;
+	private static String normTime3;//下班时间
 	private String holiday;
 	private String startTime;
 	private String endTime;
@@ -43,6 +51,7 @@ public class exportAction extends ActionSupport {
 	private SimpleDateFormat dateFormat1 = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 	private SimpleDateFormat dateFormat2 = new SimpleDateFormat("HH:mm:ss");
 	private SimpleDateFormat dateFormat3 = new SimpleDateFormat("yyyy-MM-dd");
+	private SimpleDateFormat dateFormat4 = new SimpleDateFormat("HH:mm");
 
 	// excel向数据库导入数据
 	public String aainput() {
@@ -146,6 +155,266 @@ public class exportAction extends ActionSupport {
 				System.out.println(workerName + " : " + allAbnormalTime);
 			}
 			return SUCCESS;
+		} else {
+			return ERROR;
+		}
+	}
+	
+	/**
+	 * 导出Excel，包括姓名、加班日期、时间、攻击加班时间、加班合计
+	 * */
+	@SuppressWarnings("unchecked")
+	public String exportAbnormalTime() {
+		allPeopleName = (List<String>) ActionContext.getContext().getSession()
+				.get("allPeopleName");
+		workerList = (List<Worker>) ActionContext.getContext().getSession()
+				.get("workerList");
+		//按人记录总加班时间
+		Map<String , Double> allAbnormalTimeMap = new HashMap<String, Double>();
+		
+		/*计算所有加班中加班起止时间*/
+		// AbnormalTime abnormalTime=new AbnormalTime();
+		if (allPeopleName != null && workerList != null) {
+			for (String workerName : allPeopleName) {
+				AbnormalTime abnormalTime = new AbnormalTime();
+				double allAbnormalTime = 0;
+				// 平时加班的（为避免平时加班但2次以上打卡）
+				Map<String , Double> pingMap = new HashMap<String, Double>();
+				// 节假日整天加班的（为避免节假日整天加班但2次以上打卡）
+				ArrayList<String> zhengList = new ArrayList<String>();
+
+				for (Worker worker : workerList) {
+					try {
+						// workerList中name=workerName，且加班时间大于0
+						if (worker.getName().equals(workerName)&&worker.getFlog().equals("2")) {
+							//if (!worker.getFlog().equals("3")) {// 为去掉旷工，因为旷工时间格式不一样，会引起时间格式转换异常
+								String signDate = dateFormat3
+										.format(dateFormat1.parse(worker
+												.getSignTime()));//日期
+								String signTime = dateFormat4
+										.format(dateFormat1.parse(worker
+												.getSignTime()));//时间
+								String ringOutTime = dateFormat4.format(dateFormat4
+										.parse(normTime3));//下班时间
+								if (worker.getWeek().indexOf("(整)") == -1) {
+									double workAbnormalTime = worker.getAbnormalTime();
+									// 非节假日整天加班的
+									if( workAbnormalTime != 0){
+										if (!pingMap.keySet().contains(signDate)) {
+											allAbnormalTime += worker.getAbnormalTime();
+											pingMap.put(signDate, workAbnormalTime);
+											//插入加班日期
+											abnormalTime = new AbnormalTime();
+											abnormalTime.setName(worker.getName());
+											abnormalTime.setSignDate(signDate);//加班日期
+											abnormalTime.setSignTime(ringOutTime+"-"+signTime);//加班时间
+											abnormalTime.setDayAbnormalTime(worker.getAbnormalTime());//加班时长
+											abnormalTimeList.add(abnormalTime);
+										}else{
+											//第二次发现的时间比Map中的大，加上差值
+											if(pingMap.get(signDate)<workAbnormalTime){
+												allAbnormalTime+=workAbnormalTime-pingMap.get(signDate);
+												pingMap.put(signDate, workAbnormalTime);
+												
+												//去掉时间小的
+												Integer deleteFlag=null;
+												for(int i = 0 ; i < abnormalTimeList.size() ; i++){
+													if(abnormalTimeList.get(i).getName().equals(workerName)&&abnormalTimeList.get(i).getSignDate().equals(signDate)){
+														deleteFlag=i;
+													}
+												}
+												if(deleteFlag!=null){
+													int deleteFlagInt=deleteFlag;
+													abnormalTimeList.remove(deleteFlagInt);
+												}
+												abnormalTime = new AbnormalTime();
+												abnormalTime.setName(worker.getName());
+												abnormalTime.setSignDate(signDate);//加班日期
+												abnormalTime.setSignTime(ringOutTime+"-"+signTime);//加班时间
+												abnormalTime.setDayAbnormalTime(worker.getAbnormalTime());//加班时长
+												abnormalTimeList.add(abnormalTime);
+											}
+										}
+									}
+								} else {
+									// 节假日整天加班的
+									abnormalTime = new AbnormalTime();
+									
+									if (!zhengList.contains(signDate)) {
+										allAbnormalTime += worker.getAbnormalTime();//加班总时间
+										if (worker.getAbnormalTime() == 0) {
+											// 加班时间为0的
+											abnormalTime.setName(worker.getName()+"(节假日加班只打卡一次)");
+											abnormalTime.setSignTime(signTime);
+										}else{
+											long workStartTime = 0;
+											long workEndTime = 0;
+											boolean flog = false; //8：00整打卡的标志位，"08:00:00"时workerTime=0，影响数据
+											for (Worker w : workerList) {
+												String workerDate;
+												try {
+													workerDate = dateFormat3.format(dateFormat3.parse(w
+														.getSignTime()));
+													String signTimeFormat2 = dateFormat2.format(dateFormat1.parse(w
+														.getSignTime()));
+													long workerTime = dateFormat2.parse(signTimeFormat2).getTime();
+													//"08:00:00"时workerTime=0
+													if (w.getName().equals(workerName)
+														&& workerDate.equals(signDate)) {
+														if (workStartTime == 0&&flog==false) {
+															flog=true;
+															workStartTime = workerTime;
+														} else if (workEndTime == 0) {
+															workEndTime = workerTime;
+														} else if (workStartTime > workerTime) {
+															workStartTime = workerTime;
+														} else if (workEndTime < workerTime) {
+															workEndTime = workerTime;
+														}
+													}
+												} catch (ParseException e) {
+													e.printStackTrace();
+												}
+											}
+											abnormalTime.setName(worker.getName());
+											dateFormat2.format(workStartTime);
+											abnormalTime.setSignTime(String.valueOf(dateFormat4.format(workStartTime))+"-"+String.valueOf(dateFormat4.format(workEndTime)));//加班时间
+											abnormalTime.setDayAbnormalTime(tfRound((float) (workEndTime-workStartTime)
+													/ (1000 * 60 * 60)));
+										}
+										abnormalTime.setSignDate(signDate);//加班日期
+										abnormalTimeList.add(abnormalTime);
+										zhengList.add(signDate);
+									}
+								}
+							}		
+					} catch (ParseException e) {
+						e.printStackTrace();
+					}
+				}
+				/*插入总的加班时间*/
+				allAbnormalTimeMap.put(workerName, allAbnormalTime);
+				for(String key:allAbnormalTimeMap.keySet()){
+					for(AbnormalTime a:abnormalTimeList){
+						if(a.getName().equals(key)){
+							a.setAbnormalTime(allAbnormalTimeMap.get(key));
+						}
+					}
+				}
+				System.out.println(workerName + " : " + allAbnormalTime);
+			}
+			
+			/*导出excel*/
+			HttpServletResponse response = ServletActionContext.getResponse();
+			response.setContentType("APPLICATION/OCTET-STREAM");
+			String fileName="abnormalTime"+(new Timestamp(System.currentTimeMillis())).toString()+".xls";
+			response.addHeader("Content-Disposition", "attachment;filename="+fileName);
+			//创建一个新的excel
+			HSSFWorkbook wb = new HSSFWorkbook();
+			//创建sheet页
+			HSSFSheet sheet = wb.createSheet();
+			
+			/*合并单元格*/
+			//标题
+			sheet.addMergedRegion(new CellRangeAddress(
+	                0, //first row (0-based)
+	                0, //last row  (0-based)
+	                0, //first column (0-based)
+	                4  //last column  (0-based)
+	        ));
+			//实际导出的List
+			List<AbnormalTime> realList = new ArrayList<AbnormalTime>();
+			//合并单元格时使用
+			Map<String , Integer> hebingMap = new HashMap<String , Integer>();
+			for(String name:allPeopleName){
+				int num = 0;//每个人的条数
+				for(AbnormalTime a:abnormalTimeList){
+					if(a.getName().equals(name)){
+						num+=1;
+						realList.add(a);
+					}
+				}
+				hebingMap.put(name , num);
+			}
+			int rewNum = 2;//第3行开始
+			for(String name:allPeopleName){
+				for(String key :hebingMap.keySet()){
+					if(name.equals(key)&&hebingMap.get(key)!=0){
+						//姓名列
+						sheet.addMergedRegion(new CellRangeAddress(
+								rewNum, //first row (0-based)
+								rewNum+hebingMap.get(key)-1, //last row  (0-based)
+								0, //first column (0-based)
+								0  //last column  (0-based)
+							));
+						//加班合计列
+						sheet.addMergedRegion(new CellRangeAddress(
+								rewNum, //first row (0-based)
+								rewNum+hebingMap.get(key)-1, //last row  (0-based)
+								4, //first column (0-based)
+								4  //last column  (0-based)
+							));
+					rewNum+=hebingMap.get(key);
+					}
+				}
+			}
+			HSSFRow row = sheet.createRow(1);
+			HSSFRow row1 = sheet.createRow(0);
+			HSSFCell cell = row.createCell(0);
+			HSSFCell cell1 = row.createCell(0);
+			cell1 = row1.createCell(0);
+			cell1.setCellValue("部门加班统计");
+			//设置居中
+			HSSFCellStyle setBorder = wb.createCellStyle();
+			setBorder.setAlignment(HSSFCellStyle.ALIGN_CENTER_SELECTION);//水平居中  
+			setBorder.setVerticalAlignment(HSSFCellStyle.ALIGN_CENTER_SELECTION);//垂直居中 
+			for(int s = 0; s <= 4; s++){
+				cell = row.createCell(s);
+				if (s == 0) {
+					cell.setCellValue("姓名");
+				} else if (s == 1) {
+					cell.setCellValue("日期");
+				} else if (s == 2) {
+					cell.setCellValue("时间");
+				} else if (s == 3) {
+					cell.setCellValue("共计加班时间");
+				} else if (s == 4) {
+					cell.setCellValue("加班合计");
+				}
+			}
+			try {
+				if (realList != null && realList.size() > 0) {
+					int s = 2;  //内容从第3行开始
+					for (int i = 0; i < realList.size(); i++) {
+						AbnormalTime tr = (AbnormalTime) realList.get(i);
+						row = sheet.createRow(s++);
+						for (int j = 0; j <= 4; j++) {
+							cell = row.createCell(j);
+							if (j == 0) {
+								cell.setCellValue(tr.getName());
+							} else if (j == 1) {
+								cell.setCellValue(tr.getSignDate());
+							} else if (j == 2) {
+								cell.setCellValue(tr.getSignTime());
+							} else if (j == 3) {
+								cell.setCellValue(tr.getDayAbnormalTime());
+							} else if (j == 4) {
+								cell.setCellValue(tr.getAbnormalTime());
+							}
+						}
+					}
+				}
+				
+				wb.write(response.getOutputStream());
+				response.getOutputStream().close();
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+				return "downsxls";
+			} catch (IOException e) {
+				e.printStackTrace();
+				return "downsxls";
+			}
+			return null;
 		} else {
 			return ERROR;
 		}
@@ -522,7 +791,7 @@ public class exportAction extends ActionSupport {
 			System.out.println(w.getSignTime());
 		}
 	}
-
+	
 	// =============================================================================================
 	public File getUploadFile() {
 		return uploadFile;
@@ -574,10 +843,6 @@ public class exportAction extends ActionSupport {
 
 	public String getNormTime3() {
 		return normTime3;
-	}
-
-	public void setNormTime3(String normTime3) {
-		this.normTime3 = normTime3;
 	}
 
 	public String getHoliday() {

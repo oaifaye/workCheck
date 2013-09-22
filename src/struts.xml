@@ -10,6 +10,9 @@
 			<result name="success">/abnormalTime.jsp</result>
 			<result name="error">/404.jsp</result>
 		</action>
+		<action name="exportAbnormalTime" class="com.faye.action.exportAction" method="exportAbnormalTime">
+			<result name="error">/404.jsp</result>
+		</action>
 		<action name="initSuanqiu" class="com.faye.action.SuanqiuAction" method="initSuanqiu">
 			<result name="success">/game/index.jsp</result>
 		</action>

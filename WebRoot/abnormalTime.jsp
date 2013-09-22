@@ -23,10 +23,10 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 <s:iterator value="abnormalTimeList" >
 	<tr>
 		<td>
-		<s:property value="name" />
+			<s:property value="name" />
 		</td>
 		<td>
-		<s:property value="abnormalTime" />
+			<s:property value="abnormalTime" />
 		</td>
 	</tr>
 	

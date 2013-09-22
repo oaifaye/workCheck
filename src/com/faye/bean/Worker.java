@@ -7,6 +7,7 @@ public class Worker {
 	private String flog;
 	private String week;
 	private double abnormalTime;
+	private String signDate;
 
 	public String getNumber() {
 		return number;
@@ -54,6 +55,14 @@ public class Worker {
 
 	public void setAbnormalTime(double abnormalTime) {
 		this.abnormalTime = abnormalTime;
+	}
+
+	public String getSignDate() {
+		return signDate;
+	}
+
+	public void setSignDate(String signDate) {
+		this.signDate = signDate;
 	}
 
 	

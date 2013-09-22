@@ -275,6 +275,29 @@ text-align: center;
 			window.open( "listAbnormalTime.action", '', sFeatures );
 		});
 		
+		$("#exportAbnormalTime").click(function(){
+			/**
+				window.open([URL ][, name ][, features ][, replace]]]])
+				URL：新窗口的URL地址
+				name：新窗口的名称，可以为空
+				featurse：属性控制字符串，在此控制窗口的各种属性，属性之间以逗号隔开。
+				fullscreen= { yes/no/1/0 } 是否全屏，默认no
+				channelmode= { yes/no/1/0 } 是否显示频道栏，默认no
+				toolbar= { yes/no/1/0 } 是否显示工具条，默认no
+				location= { yes/no/1/0 } 是否显示地址栏，默认no
+				directories = { yes/no/1/0 } 是否显示转向按钮，默认no
+				status= { yes/no/1/0 } 是否显示窗口状态条，默认no
+				menubar= { yes/no/1/0 } 是否显示菜单，默认no
+				scrollbars= { yes/no/1/0 } 是否显示滚动条，默认yes
+				resizable= { yes/no/1/0 } 是否窗口可调整大小，默认no
+				width=number 窗口宽度（像素单位）
+				height=number 窗口高度（像素单位）
+				top=number 窗口离屏幕顶部距离（像素单位）
+				left=number 窗口离屏幕左边距离（像素单位）
+			*/
+			var sFeatures = "height=600, width=600, scrollbars=yes,top=100,left=500";
+			window.open( "exportAbnormalTime.action", '', sFeatures );
+		});
 	});
 	
 </script>
@@ -299,7 +322,8 @@ text-align: center;
 	
 	<input type="button" id="abnormalTime" value="员工加班情况" /><br />
 	<input type="button" id="dakayici" value="节假日加班只打卡一次" /><br />
-	<input type="button" id="wentikaoqin" value="显示迟到及旷工人员" /><br /><br />
+	<input type="button" id="wentikaoqin" value="显示迟到及旷工人员" /><br />
+	<input type="button" id="exportAbnormalTime" value="导出加班表格" /><br /><br />
 	
 	<div style="font-size: 16px;color:#A23400;text-align: center;">老孙&nbsp;&nbsp;研发<br />裙下尽责&nbsp;&nbsp;技术支持</div>
 </div>
