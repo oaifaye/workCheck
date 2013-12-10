@@ -39,7 +39,7 @@ public class exportAction extends ActionSupport {
 	private List<Worker> workerList = new ArrayList<Worker>();
 	private String normTime1;
 	private String normTime2;
-	private static String normTime3;//下班时间
+	private String normTime3;//下班时间
 	private String holiday;
 	private String startTime;
 	private String endTime;
@@ -142,7 +142,6 @@ public class exportAction extends ActionSupport {
 							}
 						}
 					} catch (ParseException e) {
-
 						e.printStackTrace();
 					}
 				}
@@ -195,7 +194,7 @@ public class exportAction extends ActionSupport {
 										.format(dateFormat1.parse(worker
 												.getSignTime()));//时间
 								String ringOutTime = dateFormat4.format(dateFormat4
-										.parse(normTime3));//下班时间
+										.parse("17:30:00"));//下班时间
 								if (worker.getWeek().indexOf("(整)") == -1) {
 									double workAbnormalTime = worker.getAbnormalTime();
 									// 非节假日整天加班的
@@ -807,6 +806,19 @@ public class exportAction extends ActionSupport {
 
 	public void setUploadpicFileName(String uploadpicFileName) {
 		this.uploadpicFileName = uploadpicFileName;
+	}
+
+	public SimpleDateFormat getDateFormat3() {
+		return dateFormat3;
+	}
+
+	public void setDateFormat3(SimpleDateFormat dateFormat3) {
+		this.dateFormat3 = dateFormat3;
+	}
+
+
+	public void setNormTime3(String normTime3) {
+		this.normTime3 = normTime3;
 	}
 
 	public String getUploadpicContentType() {
