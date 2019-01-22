@@ -71,6 +71,8 @@ body {
 	font-size: 14px;
 	color: #BB5E00;
 	background-color:#F0F0F0;
+	height: 700px;
+	overflow: auto;
 }
 #workerMenu ul li{
 width:30%;
@@ -324,7 +326,7 @@ text-align: center;
 	<input type="button" id="dakayici" value="节假日加班只打卡一次" /><br />
 	<input type="button" id="wentikaoqin" value="显示迟到及旷工人员" /><br />
 	<input type="button" id="exportAbnormalTime" value="导出加班表格" /><br /><br />
-	
+	<input type="button" onclick="javascript:location.href='indexTk.jsp'" style="width: 100px;height: 100px;background: blue;font-size: 30px;" value="切新版" />
 	<div style="font-size: 16px;color:#A23400;text-align: center;">老孙&nbsp;&nbsp;研发<br />裙下尽责&nbsp;&nbsp;技术支持</div>
 </div>
 
@@ -348,7 +350,7 @@ text-align: center;
 
 <!-- 正文 -->
 	<div class="center">
-		<div align="center">
+		<div align="center"> 
 			<s:form action="aainput" namespace="/" id="form1" method="post" enctype="multipart/form-data">
 				<s:file id="file1" name="uploadFile" label="考勤表"></s:file>
 				<s:textfield name="normTime1" value="08:35:00" label="上班时间"></s:textfield>

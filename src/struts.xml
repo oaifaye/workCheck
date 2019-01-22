@@ -2,15 +2,14 @@
 <!DOCTYPE struts PUBLIC "-//Apache Software Foundation//DTD Struts Configuration 2.1//EN" "http://struts.apache.org/dtds/struts-2.1.dtd">
 <struts>
 	<package name="default" extends="struts-default" namespace="/">
-		
-		<action name="aainput" class="com.faye.action.exportAction" method="aainput">
+		<action name="aainput" class="com.faye.action.ExportAction" method="aainput">
 			<result name="success">/index.jsp</result>
 		</action>
-		<action name="listAbnormalTime" class="com.faye.action.exportAction" method="listAbnormalTime">
+		<action name="listAbnormalTime" class="com.faye.action.ExportAction" method="listAbnormalTime">
 			<result name="success">/abnormalTime.jsp</result>
 			<result name="error">/404.jsp</result>
 		</action>
-		<action name="exportAbnormalTime" class="com.faye.action.exportAction" method="exportAbnormalTime">
+		<action name="exportAbnormalTime" class="com.faye.action.ExportAction" method="exportAbnormalTime">
 			<result name="error">/404.jsp</result>
 		</action>
 		<action name="initSuanqiu" class="com.faye.action.SuanqiuAction" method="initSuanqiu">
@@ -19,5 +18,21 @@
 		<action name="saveSuanqiu" class="com.faye.action.SuanqiuAction" method="saveSuanqiu">
 			<result name="success" type="redirect">initSuanqiu</result>
 		</action>
+		
+		<action name="aainputTk" class="com.faye.action.ExportTkAction" method="aainputTk">
+			<result name="success">/indexTk.jsp</result>
+		</action>
+		<action name="listAbnormalTimeTk" class="com.faye.action.ExportTkAction" method="listAbnormalTimeTk">
+			<result name="success">/abnormalTimeTk.jsp</result>
+			<result name="error">/404.jsp</result>
+		</action>
+		<action name="exportAbnormalTimeTk" class="com.faye.action.ExportTkAction" method="exportAbnormalTimeTk">
+			<result name="error">/404.jsp</result>
+		</action>
+		<action name="initTk" class="com.faye.action.ExportTkAction" method="init">
+			<result name="success">/indexTk.jsp</result>
+			<result name="error">/404.jsp</result>
+		</action>
 	</package>
+	<constant name="struts.multipart.maxSize" value="100000000"/> 
 </struts>    
