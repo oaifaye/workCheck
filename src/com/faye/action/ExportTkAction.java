@@ -46,8 +46,8 @@ public class ExportTkAction extends ActionSupport {
 	private String normTime1;
 	private String normTime2;
 	private String normTime3;//下班时间
-	private String startTime;
-	private String endTime;
+//	private String startTime;
+//	private String endTime;
 	private String holiday;//上班时间 应该放假
 	private String weekendWorkday;//放假的日子 但是应该上班
 	private List<String> allPeopleName;
@@ -57,7 +57,6 @@ public class ExportTkAction extends ActionSupport {
 	private String needDept;//需要统计的部门
 	private String needSite;//可用的打卡地点
 	
-	private ArrayList<String> allWorkDay;
 	private SimpleDateFormat dateFormat3 = new SimpleDateFormat("yyyy-MM-dd");
 	private static List<String> NEED_DEPT = new ArrayList<String>();
 	static {
@@ -402,14 +401,14 @@ public class ExportTkAction extends ActionSupport {
 					if(FayeUtils.isEmpty(hssfrow.getCell(0).getStringCellValue())) {
 						continue;
 					}
-					name = FayeUtils.getUserName(hssfrow.getCell(0).getStringCellValue().trim());
-					String dept = hssfrow.getCell(1).getStringCellValue().trim();
-					String beginTime = hssfrow.getCell(2).getStringCellValue();
+					name = hssfrow.getCell(0).getStringCellValue().trim()+FayeUtils.getUserName(hssfrow.getCell(1).getStringCellValue().trim());
+					String dept = hssfrow.getCell(2).getStringCellValue().trim();
+					String beginTime = hssfrow.getCell(3).getStringCellValue();
 					if(beginTime == null || beginTime.length() != 16) {
 						continue;
 					}
 					
-					String endTime = hssfrow.getCell(3).getStringCellValue();
+					String endTime = hssfrow.getCell(4).getStringCellValue();
 					if(endTime == null || endTime.length() != 16) {
 						continue;
 					}
@@ -420,9 +419,9 @@ public class ExportTkAction extends ActionSupport {
 					leave.setEndTime(endTime);
 					leave.setDayNum(DateUtil.getLeaveDayNum(beginTime, endTime));
 					
-					String shijia = hssfrow.getCell(5).getStringCellValue().trim();
-					String bingjia = hssfrow.getCell(6).getStringCellValue().trim();
-					String zhuyuan = hssfrow.getCell(7).getStringCellValue().trim();
+					String shijia = hssfrow.getCell(6).getStringCellValue().trim();
+					String bingjia = hssfrow.getCell(7).getStringCellValue().trim();
+					String zhuyuan = hssfrow.getCell(8).getStringCellValue().trim();
 					leave.setLeaveType("1");
 					leave.setLeaveMsg("事假");
 					if("勾选".equals(bingjia) || "勾选".equals(zhuyuan)) {
@@ -476,15 +475,15 @@ public class ExportTkAction extends ActionSupport {
 					if(FayeUtils.isEmpty(hssfrow.getCell(0).getStringCellValue())) {
 						continue;
 					}
-					name = FayeUtils.getUserName(hssfrow.getCell(0).getStringCellValue().trim());
-					String dept = hssfrow.getCell(1).getStringCellValue().trim();
+					name = hssfrow.getCell(0).getStringCellValue().trim()+FayeUtils.getUserName(hssfrow.getCell(1).getStringCellValue().trim());
+					String dept = hssfrow.getCell(2).getStringCellValue().trim();
 					String leaveMsg = hssfrow.getCell(3).getStringCellValue().trim();
-					String beginTime = hssfrow.getCell(3).getStringCellValue();
+					String beginTime = hssfrow.getCell(4).getStringCellValue();
 					if(beginTime == null || beginTime.length() != 16) {
 						continue;
 					}
 					
-					int dayNum = (int)(hssfrow.getCell(4).getNumericCellValue());
+					int dayNum = (int)(hssfrow.getCell(5).getNumericCellValue());
 					Date endTimeDate = DateUtil.addDay(DateUtil.strToDate(beginTime, "yyyy-MM-dd HH:mm"), dayNum);
 					String endTime = DateUtil.dateToStr(endTimeDate, "yyyy-MM-dd HH:mm");
 					
@@ -732,22 +731,6 @@ public class ExportTkAction extends ActionSupport {
 		this.holiday = holiday;
 	}
 
-	public String getStartTime() {
-		return startTime;
-	}
-
-	public void setStartTime(String startTime) {
-		this.startTime = startTime;
-	}
-
-	public String getEndTime() {
-		return endTime;
-	}
-
-	public void setEndTime(String endTime) {
-		this.endTime = endTime;
-	}
-
 	public String getWeekendWorkday() {
 		return weekendWorkday;
 	}
@@ -824,6 +807,22 @@ public class ExportTkAction extends ActionSupport {
 
 	public void setNeedSite(String needSite) {
 		this.needSite = needSite;
+	}
+
+	public Date getMinDate() {
+		return minDate;
+	}
+
+	public void setMinDate(Date minDate) {
+		this.minDate = minDate;
+	}
+
+	public Date getMaxDate() {
+		return maxDate;
+	}
+
+	public void setMaxDate(Date maxDate) {
+		this.maxDate = maxDate;
 	}
 
 }

@@ -388,6 +388,7 @@ text-align: center;
 			</s:form>
 		</div>
 		<s:property value="workerList.size()" />
+		<s:property value="minDate" />-<s:property value="maxDate" />
 		<table class="table">
 			<tr class="tableHead" >
 				<td>序号</td>
